@@ -197,13 +197,14 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
             c = torch.tensor(labels[:, 0])  # classes
             # cf = torch.bincount(c.long(), minlength=nc) + 1.  # frequency
             # model._initialize_biases(cf.to(device))
+            """
             if plots:
                 plot_labels(labels, save_dir=save_dir)
                 if tb_writer:
                     tb_writer.add_histogram('classes', c, 0)
                 if wandb:
                     wandb.log({"Labels": [wandb.Image(str(x), caption=x.name) for x in save_dir.glob('*labels*.png')]})
-
+            """
             # Anchors
             # if not opt.noautoanchor:
             #     check_anchors(dataset, model=model, thr=hyp['anchor_t'], imgsz=imgsz)
@@ -309,6 +310,7 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
                 pbar.set_description(s)
 
                 # Plot
+                """
                 if plots and ni < 3:
                     f = save_dir / f'train_batch{ni}.jpg'  # filename
                     plot_images(images=imgs, targets=targets, paths=paths, fname=f)
@@ -317,6 +319,7 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
                     #     tb_writer.add_graph(model, imgs)  # add model to tensorboard
                 elif plots and ni == 3 and wandb:
                     wandb.log({"Mosaics": [wandb.Image(str(x), caption=x.name) for x in save_dir.glob('train*.jpg')]})
+                """
 
             # end batch ------------------------------------------------------------------------------------------------
         # end epoch ----------------------------------------------------------------------------------------------------
@@ -440,11 +443,13 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
                     strip_optimizer(f2)  # strip optimizer
                     os.system('gsutil cp %s gs://%s/weights' % (f2, opt.bucket)) if opt.bucket else None  # upload
         # Finish
+        
         if plots:
             plot_results(save_dir=save_dir)  # save as results.png
             if wandb:
                 wandb.log({"Results": [wandb.Image(str(save_dir / x), caption=x) for x in
                                        ['results.png', 'precision-recall_curve.png']]})
+        
         logger.info('%g epochs completed in %.3f hours.\n' % (epoch - start_epoch + 1, (time.time() - t0) / 3600))
     else:
         dist.destroy_process_group()
