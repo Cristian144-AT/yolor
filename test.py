@@ -36,7 +36,7 @@ def test(data,
          save_json=False,
          single_cls=False,
          augment=False,
-         verbose=False,
+         verbose=True,
          model=None,
          dataloader=None,
          save_dir=Path(''),  # for saving images
@@ -58,6 +58,7 @@ def test(data,
         # Directories
         save_dir = Path(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))  # increment run
         (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+        (save_dir / 'labels_alternative' if save_txt else save_dir).mkdir(parents=True, exist_ok=True) #make alternative directory
 
         # Load model
         model = Darknet(opt.cfg).to(device)
@@ -157,6 +158,18 @@ def test(data,
                     line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                     with open(save_dir / 'labels' / (path.stem + '.txt'), 'a') as f:
                         f.write(('%g ' * len(line)).rstrip() % line + '\n')
+
+            #Saving an alternative format for prediction labels  
+            if save_txt:
+                gn = torch.tensor(shapes[si][0])[[1, 0, 1, 0]]  # normalization gain whwh
+                x = pred.clone()
+                x[:, :4] = scale_coords(img[si].shape[1:], x[:, :4], shapes[si][0], shapes[si][1])  # to original
+                for *xyxy, conf, cls in x:
+                    xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                    line_two = (cls, conf, *xywh) if save_conf else (cls, *xywh) # Cristian Aliaga: Segundo formate de las etiquetas, alternativo
+                    with open(save_dir / 'labels_alternative' / (path.stem + '.txt'), 'a') as ff:
+                        ff.write(('%g ' * len(line_two)).rstrip() % line_two + '\n')
+
 
             # W&B logging
             if plots and len(wandb_images) < log_imgs:
